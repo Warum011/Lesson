@@ -1,21 +1,31 @@
 package main
 
 import (
-	"Lesson2/queue"
-	"Lesson2/stack"
+	un "Lesson2/unpacking"
+	"flag"
 	"fmt"
+	"os"
 )
 
 func main() {
-	st := stack.NewStackOnSlice()
-	st.Push(5)
-	st.Push(15)
-	fmt.Println(st.Print())
 
-	q := queue.NewQueueOnSlice()
-	q.PushQueue(51)
-	q.PushQueue(14)
-	q.PopQueue()
-	fmt.Println(q.PrintQueue())
+	inputFlag := flag.String("input", "", "Строка для распаковки")
+	daemonFlag := flag.Bool("daemon", false, "Запустить в режиме демона")
+	flag.Parse()
+
+	if *daemonFlag {
+		un.RunDaemon()
+	} else if *inputFlag != "" {
+		result, err := un.Unpack(*inputFlag)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Println(result)
+	} else {
+		fmt.Fprintln(os.Stderr, "Необходимо указать --input или --daemon флаг")
+		flag.Usage()
+		os.Exit(1)
+	}
 
 }
