@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"math"
@@ -8,16 +9,15 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
-	"time"
 )
 
-func leibnizLine(id, n int, done <-chan struct{}, wg *sync.WaitGroup, resCh chan<- float64) {
+func leibnizLine(ctx context.Context, id int, n int, wg *sync.WaitGroup, resCh chan<- float64) {
 	defer wg.Done()
-
 	var sum float64
+
 	for i := id; ; i += n {
 		select {
-		case <-done:
+		case <-ctx.Done():
 			resCh <- sum
 			return
 		default:
@@ -28,47 +28,44 @@ func leibnizLine(id, n int, done <-chan struct{}, wg *sync.WaitGroup, resCh chan
 }
 
 func main() {
-	var n int
-	flag.IntVar(&n, "n", 1, "Число горутин для вычисления ряда:")
+
+	n := flag.Int("input", 1, "number of goroutines:")
 	flag.Parse()
 
-	if n < 1 {
-		fmt.Println("Число горутин должно быть не меньше 1")
-		os.Exit(1)
+	if *n < 1 {
+		fmt.Println("the number of goroutines cannot be less than 1")
+		return
 	}
 
-	done := make(chan struct{})
-	resCh := make(chan float64, n)
-
+	resCh := make(chan float64, *n)
 	var wg sync.WaitGroup
+	wg.Add(*n)
+	ctx, cancel := context.WithCancel(context.Background())
 
-	for i := 0; i < n; i++ {
-		wg.Add(1)
-		go leibnizLine(i, n, done, &wg, resCh)
+	for i := 0; i < *n; i++ {
+		go leibnizLine(ctx, i, *n, &wg, resCh)
+
 	}
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
-	fmt.Println("Вычисление начинается... Для остановки нажмите Ctrl+C")
+	fmt.Println("counting ^_^, To stop ctrl+c")
 
 	select {
-	case sig := <-sigChan:
-		fmt.Printf("\nПолучен сигнал %s, завершаем вычисления...\n", sig)
-		close(done)
+	case <-sigChan:
+		cancel()
 	}
 
 	wg.Wait()
 	close(resCh)
 
 	var totalSum float64
-	for part := range resCh {
-		totalSum += part
+	for step := range resCh {
+		totalSum += step
 	}
 
-	piApprox := totalSum * 4
-	fmt.Printf("Приближенное значение числа π: %.15f\n", piApprox)
-	fmt.Println("Программа завершена.")
+	result := totalSum * 4
+	fmt.Printf("the calculated value of Pi is: %.10f", result)
 
-	time.Sleep(100 * time.Millisecond)
 }

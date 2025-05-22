@@ -56,7 +56,55 @@ func Unpack(input string) (string, error) {
 
 }
 
-func RunDaemon() {
+func Pack(input string) string {
+	if input == "" {
+		return ""
+	}
+	var builder strings.Builder
+	runes := []rune(input)
+	n := len(runes)
+	count := 1
+
+	escapeRune := func(r rune) string {
+		if (r >= '0' && r <= '9') || r == '\\' {
+			return "\\" + string(r)
+		}
+		return string(r)
+	}
+
+	current := runes[0]
+	for i := 1; i < n; i++ {
+		if runes[i] == current {
+			count++
+		} else {
+			if count == 1 {
+				builder.WriteString(escapeRune(current))
+			} else if count > 1 && count < 10 {
+				builder.WriteString(escapeRune(current))
+				builder.WriteString(fmt.Sprintf("%d", count))
+			} else {
+				for j := 0; j < count; j++ {
+					builder.WriteString(escapeRune(current))
+				}
+			}
+			current = runes[i]
+			count = 1
+		}
+	}
+	if count == 1 {
+		builder.WriteString(escapeRune(current))
+	} else if count > 1 && count < 10 {
+		builder.WriteString(escapeRune(current))
+		builder.WriteString(fmt.Sprintf("%d", count))
+	} else {
+		for j := 0; j < count; j++ {
+			builder.WriteString(escapeRune(current))
+		}
+	}
+	return builder.String()
+}
+
+func RunUnpackDaemon() {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Println("Daemon Mode:")
 	for {
@@ -73,5 +121,21 @@ func RunDaemon() {
 		} else {
 			fmt.Println(result)
 		}
+	}
+}
+
+func RunPackDaemon() {
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Println("Daemon Mode (Pack):")
+	for {
+		fmt.Print("Введите строку: ")
+		input, err := reader.ReadString('\n')
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			continue
+		}
+		input = strings.TrimRight(input, "\n")
+		result := Pack(input)
+		fmt.Println(result)
 	}
 }

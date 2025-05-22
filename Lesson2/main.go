@@ -14,7 +14,7 @@ func main() {
 	flag.Parse()
 
 	if *daemonFlag {
-		un.RunDaemon()
+		un.RunUnpackDaemon()
 	} else if *inputFlag != "" {
 		result, err := un.Unpack(*inputFlag)
 		if err != nil {

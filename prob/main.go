@@ -1,11 +1,10 @@
 package main
 
-import (
-	"fmt"
-	"runtime"
-)
+import "fmt"
 
 func main() {
-	fmt.Println(runtime.NumCPU())
-
+	n := 5
+	for range n {
+		fmt.Println("кто?")
+	}
 }
