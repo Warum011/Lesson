@@ -27,17 +27,17 @@ func TestUnpack(t *testing.T) {
 		{
 			name:  "string starting with digit",
 			input: "3abc",
-			err:   error3,
+			err:   ErrInvalidStringLeadingOrConsecutiveDigit,
 		},
 		{
 			name:  "digit-only at beginning",
 			input: "45",
-			err:   error3,
+			err:   ErrInvalidStringLeadingOrConsecutiveDigit,
 		},
 		{
 			name:  "more than one digit in multiplier",
 			input: "aaa10b",
-			err:   error4,
+			err:   ErrInvalidStringMultiDigitNumber,
 		},
 		{
 			name:     "zero multiplier",
@@ -72,17 +72,17 @@ func TestUnpack(t *testing.T) {
 		{
 			name:  "invalid escape sequence: qw\\ne",
 			input: "qw\\ne",
-			err:   error2,
+			err:   ErrInvalidStringEscapeSequence,
 		},
 		{
 			name:  "backslash at end",
 			input: "abc\\",
-			err:   error1,
+			err:   ErrInvalidStringTrailingBackslash,
 		},
 		{
 			name:  "digit following digit without escape",
 			input: "a12",
-			err:   error4,
+			err:   ErrInvalidStringMultiDigitNumber,
 		},
 	}
 
@@ -102,6 +102,64 @@ func TestUnpack(t *testing.T) {
 				if result != tc.expected {
 					t.Errorf("for %q we expected %q, we got %q", tc.input, tc.expected, result)
 				}
+			}
+		})
+	}
+}
+
+func TestPack(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "empty string",
+			input:    "",
+			expected: "",
+		},
+		{
+			name:     "no repeats",
+			input:    "abcd",
+			expected: "abcd",
+		},
+		{
+			name:     "simple repeats",
+			input:    "aaaabccddddde",
+			expected: "a4bc2d5e",
+		},
+		{
+			name:     "zero stays literal",
+			input:    "aab",
+			expected: "a2b",
+		},
+		{
+			name:     "escape digits",
+			input:    "45",
+			expected: "\\4\\5",
+		},
+		{
+			name:     "escape backslash",
+			input:    "a\\b\\",
+			expected: `a\\b\\`,
+		},
+		{
+			name:     "run length >=10",
+			input:    "aaaaaaaaaaa",
+			expected: "aaaaaaaaaaa",
+		},
+		{
+			name:     "run of digits",
+			input:    "111",
+			expected: `\13`,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := Pack(tc.input)
+			if got != tc.expected {
+				t.Errorf("Pack(%q): expected %q, got %q", tc.input, tc.expected, got)
 			}
 		})
 	}

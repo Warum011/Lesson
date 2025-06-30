@@ -9,10 +9,21 @@ import (
 )
 
 var (
-	error1 = errors.New("invalid string: backslash at the end of the string")
-	error2 = errors.New("invalid string: invalid escape sequence")
-	error3 = errors.New("invalid string: string cannot start with a digit or a digit must not be consecutive")
-	error4 = errors.New("invalid string: a number consisting of more than one digit is encountered")
+	ErrInvalidStringTrailingBackslash = errors.New(
+		"invalid string: backslash at the end of the string",
+	)
+
+	ErrInvalidStringEscapeSequence = errors.New(
+		"invalid string: invalid escape sequence",
+	)
+
+	ErrInvalidStringLeadingOrConsecutiveDigit = errors.New(
+		"invalid string: string cannot start with a digit or a digit must not be consecutive",
+	)
+
+	ErrInvalidStringMultiDigitNumber = errors.New(
+		"invalid string: a number consisting of more than one digit is encountered",
+	)
 )
 
 func Unpack(input string) (string, error) {
@@ -24,18 +35,18 @@ func Unpack(input string) (string, error) {
 		var fl rune // flag
 		if runes[i] == '\\' {
 			if i+1 >= length {
-				return "", error1
+				return "", ErrInvalidStringTrailingBackslash
 			}
 			next := runes[i+1]
 			if (next >= '0' && next <= '9') || next == '\\' {
 				fl = next
 				i += 2
 			} else {
-				return "", error2
+				return "", ErrInvalidStringEscapeSequence
 			}
 		} else {
 			if runes[i] >= '0' && runes[i] <= '9' {
-				return "", error3
+				return "", ErrInvalidStringLeadingOrConsecutiveDigit
 			}
 			fl = runes[i]
 			i++
@@ -46,7 +57,7 @@ func Unpack(input string) (string, error) {
 			i++
 		}
 		if i < length && (runes[i] >= '0' && runes[i] <= '9') {
-			return "", error4
+			return "", ErrInvalidStringMultiDigitNumber
 		}
 		if repeatCount > 0 {
 			builder.WriteString(strings.Repeat(string(fl), repeatCount))

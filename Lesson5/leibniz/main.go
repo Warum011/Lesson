@@ -52,10 +52,8 @@ func main() {
 
 	fmt.Println("counting ^_^, To stop ctrl+c")
 
-	select {
-	case <-sigChan:
-		cancel()
-	}
+	<-sigChan
+	cancel()
 
 	wg.Wait()
 	close(resCh)

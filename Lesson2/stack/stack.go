@@ -5,6 +5,10 @@ import (
 	"fmt"
 )
 
+var (
+	ErrEmptyStack = errors.New("stack is empty")
+)
+
 type StackOnSlice struct {
 	items []int
 	size  int
@@ -30,13 +34,7 @@ func (s *StackOnSlice) Empty() bool {
 }
 
 func (s *StackOnSlice) increaseSlice() {
-	newCount := s.size * 2
-	if s.size == 0 {
-		newCount = 4
-	}
-	newSlice := make([]int, newCount)
-	copy(newSlice, s.items)
-	s.items = newSlice
+	s.items = append(s.items, 0)
 }
 
 func (s *StackOnSlice) Push(item int) {
@@ -49,7 +47,7 @@ func (s *StackOnSlice) Push(item int) {
 
 func (s *StackOnSlice) Pop() (int, error) {
 	if s.size == 0 {
-		return 0, errors.New("stack is empty")
+		return 0, ErrEmptyStack
 	}
 	s.size--
 	return s.items[s.size], nil

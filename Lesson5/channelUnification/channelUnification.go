@@ -1,45 +1,34 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"sync"
 	"time"
 )
 
 func or(channels ...<-chan interface{}) <-chan interface{} {
-	switch len(channels) {
-	case 0:
-		return nil
-	case 1:
-		return channels[0]
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	out := make(chan interface{})
+	var wg sync.WaitGroup
+	wg.Add(len(channels))
+
+	for _, ch := range channels {
+		go func(wg *sync.WaitGroup, c <-chan interface{}) {
+			defer wg.Done()
+			select {
+			case <-c:
+				cancel()
+			case <-ctx.Done():
+			}
+		}(&wg, ch)
 	}
+	wg.Wait()
+	close(out)
 
-	orDone := make(chan interface{})
-
-	go func() {
-		defer close(orDone)
-		switch len(channels) {
-		case 2:
-			select {
-			case <-channels[0]:
-			case <-channels[1]:
-			}
-		case 3:
-			select {
-			case <-channels[0]:
-			case <-channels[1]:
-			case <-channels[2]:
-			}
-		default:
-			select {
-			case <-channels[0]:
-			case <-channels[1]:
-			case <-channels[2]:
-			case <-or(channels[3:]...):
-			}
-		}
-	}()
-
-	return orDone
+	return out
 }
 
 func sig(after time.Duration) <-chan interface{} {
@@ -53,6 +42,7 @@ func sig(after time.Duration) <-chan interface{} {
 
 func main() {
 	start := time.Now()
+
 	<-or(
 		sig(2*time.Hour),
 		sig(5*time.Minute),
@@ -60,5 +50,6 @@ func main() {
 		sig(1*time.Hour),
 		sig(1*time.Minute),
 	)
+
 	fmt.Printf("done after %v\n", time.Since(start))
 }

@@ -2,9 +2,13 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"sync/atomic"
 	"time"
+)
+
+var (
+	ErrChannelFull = errors.New("the channel is full, the operation is not completed")
 )
 
 type atomicSemaphore struct {
@@ -48,7 +52,7 @@ func (s *atomicSemaphore) Release(n int64) error {
 		current := atomic.LoadInt64(&s.available)
 		newVal := current + n
 		if newVal > s.max {
-			return fmt.Errorf("the semaphore is full, the operation is not completed")
+			return ErrChannelFull
 		}
 		if atomic.CompareAndSwapInt64(&s.available, current, newVal) {
 			return nil

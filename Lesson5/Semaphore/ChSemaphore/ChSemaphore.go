@@ -2,8 +2,13 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
+)
+
+var (
+	ErrChannelFull = errors.New("the channel is full, the operation is not completed")
 )
 
 type ChanSemaphore struct {
@@ -52,7 +57,7 @@ func (s *ChanSemaphore) Release(n int) error {
 			s.ch <- struct{}{}
 		}
 	} else {
-		return fmt.Errorf("the channel is full, the operation is not completed")
+		return ErrChannelFull
 	}
 	return nil
 }
