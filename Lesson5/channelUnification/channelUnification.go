@@ -10,7 +10,6 @@ import (
 func or(channels ...<-chan interface{}) <-chan interface{} {
 
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 	out := make(chan interface{})
 	var wg sync.WaitGroup
 	wg.Add(len(channels))
@@ -25,9 +24,11 @@ func or(channels ...<-chan interface{}) <-chan interface{} {
 			}
 		}(&wg, ch)
 	}
-	wg.Wait()
-	close(out)
-
+	go func() {
+		wg.Wait()
+		cancel()
+		close(out)
+	}()
 	return out
 }
 
